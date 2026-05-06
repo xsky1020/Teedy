@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset
+    name="Teedy Metrics Rules"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        PMD ruleset focused on the Teedy metrics discussed in class: LoC, CC, WMC, CBO, and cohesion-related design issues.
+    </description>
+
+    <rule ref="category/java/design.xml/NcssCount" /> // LoC
+    <rule ref="category/java/design.xml/CyclomaticComplexity" />// CC
+    <rule ref="category/java/design.xml/CouplingBetweenObjects" /> // CBO
+    <rule ref="category/java/design.xml/GodClass" /> // WMC + cohesion
+</ruleset>
