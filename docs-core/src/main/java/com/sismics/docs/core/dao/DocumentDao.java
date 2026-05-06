@@ -5,6 +5,7 @@ import com.sismics.docs.core.constant.PermType;
 import com.sismics.docs.core.dao.dto.DocumentDto;
 import com.sismics.docs.core.model.jpa.Document;
 import com.sismics.docs.core.util.AuditLogUtil;
+import com.sismics.docs.core.util.SecurityUtil;
 import com.sismics.util.context.ThreadLocalContext;
 
 import jakarta.persistence.EntityManager;
@@ -12,6 +13,7 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -248,5 +250,72 @@ public class DocumentDao {
         EntityManager em = ThreadLocalContext.get().getEntityManager();
         Query query = em.createNativeQuery("select count(d.DOC_ID_C) from T_DOCUMENT d where d.DOC_DELETEDATE_D is null");
         return ((Number) query.getSingleResult()).longValue();
+    }
+
+    /**
+     * Returns documents related to a given document, ordered by number of shared tags descending.
+     * Only documents accessible to the specified targets are returned.
+     *
+     * @param documentId  Source document ID
+     * @param targetIdList ACL target ID list for permission checks
+     * @param limit       Maximum number of results
+     * @return List of related documents
+     */
+    public List<DocumentDto> getRelated(String documentId, List<String> targetIdList, int limit) {
+        EntityManager em = ThreadLocalContext.get().getEntityManager();
+
+        StringBuilder sb = new StringBuilder(
+                "select d.DOC_ID_C, d.DOC_TITLE_C, d.DOC_DESCRIPTION_C, d.DOC_CREATEDATE_D, d.DOC_LANGUAGE_C, d.DOC_IDFILE_C, d.DOC_UPDATEDATE_D," +
+                " count(dt.DOT_IDTAG_C) as shared_tags" +
+                " from T_DOCUMENT d" +
+                " join T_DOCUMENT_TAG dt on dt.DOT_IDDOCUMENT_C = d.DOC_ID_C and dt.DOT_DELETEDATE_D is null" +
+                " where dt.DOT_IDTAG_C in (" +
+                "   select dt2.DOT_IDTAG_C from T_DOCUMENT_TAG dt2" +
+                "   where dt2.DOT_IDDOCUMENT_C = :documentId and dt2.DOT_DELETEDATE_D is null" +
+                " )" +
+                " and d.DOC_ID_C != :documentId" +
+                " and d.DOC_DELETEDATE_D is null");
+
+        if (!SecurityUtil.skipAclCheck(targetIdList)) {
+            sb.append(" and (" +
+                    "   exists (select 1 from T_ACL a where a.ACL_TARGETID_C in (:targetIdList)" +
+                    "     and a.ACL_SOURCEID_C = d.DOC_ID_C and a.ACL_PERM_C = 'READ' and a.ACL_DELETEDATE_D is null)" +
+                    "   or exists (" +
+                    "     select 1 from T_DOCUMENT_TAG dta" +
+                    "     join T_ACL a2 on a2.ACL_TARGETID_C in (:targetIdList) and a2.ACL_SOURCEID_C = dta.DOT_IDTAG_C" +
+                    "       and a2.ACL_PERM_C = 'READ' and a2.ACL_DELETEDATE_D is null" +
+                    "     where dta.DOT_IDDOCUMENT_C = d.DOC_ID_C and dta.DOT_DELETEDATE_D is null" +
+                    "   )" +
+                    ")");
+        }
+
+        sb.append(" group by d.DOC_ID_C, d.DOC_TITLE_C, d.DOC_DESCRIPTION_C, d.DOC_CREATEDATE_D, d.DOC_LANGUAGE_C, d.DOC_IDFILE_C, d.DOC_UPDATEDATE_D");
+        sb.append(" order by shared_tags desc");
+
+        Query q = em.createNativeQuery(sb.toString());
+        q.setParameter("documentId", documentId);
+        if (!SecurityUtil.skipAclCheck(targetIdList)) {
+            q.setParameter("targetIdList", targetIdList);
+        }
+        q.setMaxResults(limit);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> results = q.getResultList();
+
+        List<DocumentDto> documentDtoList = new ArrayList<>();
+        for (Object[] o : results) {
+            int i = 0;
+            DocumentDto documentDto = new DocumentDto();
+            documentDto.setId((String) o[i++]);
+            documentDto.setTitle((String) o[i++]);
+            documentDto.setDescription((String) o[i++]);
+            documentDto.setCreateTimestamp(((Timestamp) o[i++]).getTime());
+            documentDto.setLanguage((String) o[i++]);
+            documentDto.setFileId((String) o[i++]);
+            documentDto.setUpdateTimestamp(((Timestamp) o[i]).getTime());
+            documentDtoList.add(documentDto);
+        }
+
+        return documentDtoList;
     }
 }

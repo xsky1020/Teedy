@@ -288,7 +288,23 @@ public class TestDocumentResource extends BaseJerseyTest {
         Assert.assertFalse(json.containsKey("files"));
         Assert.assertEquals(file1Id, json.getString("file_id"));
 
-        // Create a tag
+        // Get related documents for document 1 (should include document 2 via shared tag)
+        json = target().path("/document/" + document1Id + "/related").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, document1Token)
+                .get(JsonObject.class);
+        documents = json.getJsonArray("documents");
+        Assert.assertEquals(1, documents.size());
+        Assert.assertEquals(document2Id, documents.getJsonObject(0).getString("id"));
+        Assert.assertEquals("My super title document 2", documents.getJsonObject(0).getString("title"));
+        Assert.assertNotNull(documents.getJsonObject(0).getJsonArray("tags"));
+
+        // Get related documents for a non-existing document (KO)
+        Response relatedResponse = target().path("/document/00000000-0000-0000-0000-000000000000/related").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, document1Token)
+                .get();
+        Assert.assertEquals(Status.NOT_FOUND, Status.fromStatusCode(relatedResponse.getStatus()));
+
+
         json = target().path("/tag").request()
                 .cookie(TokenBasedSecurityFilter.COOKIE_NAME, document1Token)
                 .put(Entity.form(new Form().param("name", "SuperTag2").param("color", "#00ffff")), JsonObject.class);

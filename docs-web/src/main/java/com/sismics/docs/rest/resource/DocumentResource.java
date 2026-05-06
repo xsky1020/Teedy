@@ -1029,6 +1029,64 @@ public class DocumentResource extends BaseResource {
     }
 
     /**
+     * Returns documents related to the given document, ordered by number of shared tags.
+     *
+     * @api {get} /document/:id/related Get related documents
+     * @apiName GetRelatedDocuments
+     * @apiGroup Document
+     * @apiParam {String} id Document ID
+     * @apiSuccess {Object[]} documents List of related documents
+     * @apiSuccess {String} documents.id ID
+     * @apiSuccess {String} documents.title Title
+     * @apiSuccess {String} documents.description Description
+     * @apiSuccess {Number} documents.create_date Create date (timestamp)
+     * @apiSuccess {Number} documents.update_date Update date (timestamp)
+     * @apiSuccess {String} documents.language Language
+     * @apiSuccess {Boolean} documents.shared True if the document is shared
+     * @apiSuccess {String} documents.file_id Main file ID
+     * @apiSuccess {Object[]} documents.tags List of tags
+     * @apiSuccess {String} documents.tags.id ID
+     * @apiSuccess {String} documents.tags.name Name
+     * @apiSuccess {String} documents.tags.color Color
+     * @apiError (client) ForbiddenError Access denied
+     * @apiError (client) NotFound Document not found
+     * @apiPermission user
+     * @apiVersion 1.13.0
+     *
+     * @param documentId Document ID
+     * @return Response
+     */
+    @GET
+    @Path("{id: [a-z0-9\\-]+}/related")
+    public Response getRelated(@PathParam("id") String documentId) {
+        if (!authenticate()) {
+            throw new ForbiddenClientException();
+        }
+
+        DocumentDao documentDao = new DocumentDao();
+        DocumentDto documentDto = documentDao.getDocument(documentId, PermType.READ, getTargetIdList(null));
+        if (documentDto == null) {
+            throw new NotFoundException();
+        }
+
+        List<DocumentDto> relatedList = documentDao.getRelated(documentId, getTargetIdList(null), 5);
+
+        TagDao tagDao = new TagDao();
+        JsonArrayBuilder documents = Json.createArrayBuilder();
+        for (DocumentDto related : relatedList) {
+            List<TagDto> tagDtoList = tagDao.findByCriteria(
+                    new TagCriteria().setTargetIdList(getTargetIdList(null)).setDocumentId(related.getId()),
+                    new SortCriteria(1, true));
+            documents.add(createDocumentObjectBuilder(related)
+                    .add("tags", createTagsArrayBuilder(tagDtoList)));
+        }
+
+        return Response.ok().entity(Json.createObjectBuilder()
+                .add("documents", documents)
+                .build()).build();
+    }
+
+    /**
      * Update tags list on a document.
      *
      * @param documentId Document ID
