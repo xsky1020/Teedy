@@ -4,8 +4,10 @@
 /*/bin
 /*/gen
 /*/target
+/target
 /*/build
 /out
+/.m2-site-test*/
 /.idea
 /.project
 *.iml
