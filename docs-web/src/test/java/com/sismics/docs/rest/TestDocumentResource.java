@@ -304,7 +304,7 @@ public class TestDocumentResource extends BaseJerseyTest {
                 .get();
         Assert.assertEquals(Status.NOT_FOUND, Status.fromStatusCode(relatedResponse.getStatus()));
 
-
+        // Create a tag
         json = target().path("/tag").request()
                 .cookie(TokenBasedSecurityFilter.COOKIE_NAME, document1Token)
                 .put(Entity.form(new Form().param("name", "SuperTag2").param("color", "#00ffff")), JsonObject.class);
