@@ -34,6 +34,10 @@ public class MimeTypeUtil {
             return MimeType.DEFAULT;
         }
 
+        if ("application/x-zip-compressed".equals(mimeType)) {
+            return MimeType.APPLICATION_ZIP;
+        }
+
         return mimeType;
     }
     

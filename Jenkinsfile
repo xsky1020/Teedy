@@ -14,7 +14,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mvn test -Dmaven.test.failure.ignore=true'
-                sh 'find . -path "*/target/surefire-reports/TEST-*.xml" -print'
+                sh 'ls -1 docs-*/target/surefire-reports/TEST-*.xml 2>/dev/null || true'
             }
             post {
                 always {
