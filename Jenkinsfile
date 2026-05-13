@@ -2,21 +2,16 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS_ID = credentials('1')
+        DOCKER_HUB_CREDENTIALS_ID = '1'
         DOCKER_IMAGE = 'xsky1014/teedy-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
-        GIT_REPOSITORY = 'https://github.com/xsky1020/Teedy.git'
-        GIT_BRANCH = '*/master'
     }
 
     stages {
         stage('Build') {
             steps {
-                checkout scmGit(
-                    branches: [[name: env.GIT_BRANCH]],
-                    extensions: [],
-                    userRemoteConfigs: [[url: env.GIT_REPOSITORY]]
-                )
+                checkout scm
+                sh 'sed -n "1,35p" Dockerfile'
                 sh 'mvn -B -DskipTests clean package'
             }
         }
