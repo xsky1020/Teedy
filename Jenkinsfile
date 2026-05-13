@@ -1,61 +1,61 @@
 pipeline {
     agent any
+
+    environment {
+        DOCKER_HUB_CREDENTIALS_ID = credentials('1')
+        DOCKER_IMAGE = 'xsky1014/teedy-app'
+        DOCKER_TAG = "${env.BUILD_NUMBER}"
+        GIT_REPOSITORY = 'https://github.com/xsky1020/Teedy.git'
+        GIT_BRANCH = '*/master'
+    }
+
     stages {
-        stage('Clean') {
+        stage('Build') {
             steps {
-                sh 'mvn clean'
+                checkout scmGit(
+                    branches: [[name: env.GIT_BRANCH]],
+                    extensions: [],
+                    userRemoteConfigs: [[url: env.GIT_REPOSITORY]]
+                )
+                sh 'mvn -B -DskipTests clean package'
             }
         }
-        stage('Compile') {
+
+        stage('Build Docker Image') {
             steps {
-                sh 'mvn compile'
-            }
-        }
-        stage('Test') {
-            steps {
-                sh 'mvn test -Dmaven.test.failure.ignore=true'
-                sh 'ls -1 docs-*/target/surefire-reports/TEST-*.xml 2>/dev/null || true'
-            }
-            post {
-                always {
-                    junit testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true, skipPublishingChecks: true
+                script {
+                    docker.build("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}")
                 }
             }
         }
-        stage('PMD') {
+
+        stage('Upload Docker Image') {
             steps {
-                sh 'mvn pmd:pmd'
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CREDENTIALS_ID) {
+                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
+                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
+                    }
+                }
             }
         }
-        stage('JaCoCo') {
+
+        stage('Run Container') {
             steps {
-                sh 'mvn jacoco:report'
-            }
-        }
-        
-        stage('Site') {
-            steps {
-                sh 'mvn site site:stage'
-                sh '''
-                    mkdir -p target/staging/docs-core target/staging/docs-web-common target/staging/docs-web
-                    cp -R docs-core/target/site/. target/staging/docs-core/ 2>/dev/null || true
-                    cp -R docs-web-common/target/site/. target/staging/docs-web-common/ 2>/dev/null || true
-                    cp -R docs-web/target/site/. target/staging/docs-web/ 2>/dev/null || true
-                '''
-          }
-        }
-        stage('Package') {
-            steps {
-                sh 'mvn package -DskipTests'
+                script {
+                    sh 'docker stop teedy-container-8081 || true'
+                    sh 'docker rm teedy-container-8081 || true'
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('--name teedy-container-8081 -d -p 8081:8080')
+                    sh 'docker ps --filter "name=teedy-container"'
+                }
             }
         }
     }
+
     post {
         always {
-            archiveArtifacts artifacts: '**/target/site/**', fingerprint: true, allowEmptyArchive: true
-            archiveArtifacts artifacts: 'target/staging/**', fingerprint: true, allowEmptyArchive: true
-            archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
-            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true, allowEmptyArchive: true
         }
     }
 }
