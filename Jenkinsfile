@@ -27,7 +27,7 @@ pipeline {
         stage('Upload Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CREDENTIALS_ID) {
+                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKER_HUB_CREDENTIALS_ID) {
                         docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
                         docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
                     }
