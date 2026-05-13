@@ -13,7 +13,8 @@ ENV JETTY_VERSION 11.0.20
 ENV JETTY_HOME /opt/jetty
 
 # Install packages
-RUN apt-get update && \
+RUN sed -i 's/ main restricted/ main restricted universe multiverse/g' /etc/apt/sources.list && \
+    apt-get update && \
     apt-get -y -q --no-install-recommends install \
     vim less procps unzip wget tzdata openjdk-11-jdk \
     ffmpeg \
