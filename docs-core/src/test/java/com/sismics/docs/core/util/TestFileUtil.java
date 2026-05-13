@@ -9,6 +9,7 @@ import com.sismics.docs.core.util.format.*;
 import com.sismics.util.mime.MimeType;
 import com.sismics.util.mime.MimeTypeUtil;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -67,12 +68,23 @@ public class TestFileUtil extends BaseTest {
 
     @Test
     public void extractContentScannedPdf() throws Exception {
+        Assume.assumeTrue("tesseract is required for scanned PDF OCR test", isTesseractAvailable());
         Path path = Paths.get(getResource("scanned.pdf").toURI());
         FormatHandler formatHandler = FormatHandlerUtil.find(MimeTypeUtil.guessMimeType(path, FILE_PDF_SCANNED));
         Assert.assertNotNull(formatHandler);
         Assert.assertTrue(formatHandler instanceof PdfFormatHandler);
         String content = formatHandler.extractContent("eng", path);
         Assert.assertTrue(content.contains("All human beings are born free and equal in dignity and rights."));
+    }
+
+    private static boolean isTesseractAvailable() {
+        try {
+            Process process = new ProcessBuilder("tesseract", "--version").start();
+            process.destroyForcibly();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Test

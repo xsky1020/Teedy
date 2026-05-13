@@ -40,7 +40,7 @@ pipeline {
     }
     post {
         always {
-            archiveArtifacts artifacts: '**/target/site/**/*.*', fingerprint: true
+            archiveArtifacts artifacts: '**/target/site/**', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
             archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
             junit testResults: '**/target/surefire-reports/*.xml', skipPublishingChecks: true

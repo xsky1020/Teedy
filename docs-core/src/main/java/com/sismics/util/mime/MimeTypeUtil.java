@@ -22,6 +22,10 @@ public class MimeTypeUtil {
     public static String guessMimeType(Path file, String name) throws IOException {
         String mimeType = Files.probeContentType(file);
 
+        if (name != null && name.toLowerCase().endsWith(".csv")) {
+            return MimeType.TEXT_CSV;
+        }
+
         if (mimeType == null && name != null) {
             mimeType = URLConnection.getFileNameMap().getContentTypeFor(name);
         }
