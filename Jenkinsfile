@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS_ID = '1'
+        DOCKER_HUB_CREDENTIALS_ID = credentials('1')
         DOCKER_IMAGE = 'xsky1014/teedy-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
     }
