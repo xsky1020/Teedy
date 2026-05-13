@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_HUB_CREDENTIALS_ID = credentials('1')
-        DOCKER_IMAGE = 'xsky1014/teedy-app'
+        DOCKER_IMAGE = 'laz1014/teedy-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
     }
 
@@ -26,11 +26,18 @@ pipeline {
 
         stage('Upload Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKER_HUB_CREDENTIALS_ID) {
-                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
-                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: env.DOCKER_HUB_CREDENTIALS_ID,
+                    usernameVariable: 'DOCKER_HUB_USERNAME',
+                    passwordVariable: 'DOCKER_HUB_PASSWORD'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+                        docker image ls "$DOCKER_IMAGE"
+                        docker push "$DOCKER_IMAGE:$DOCKER_TAG"
+                        docker tag "$DOCKER_IMAGE:$DOCKER_TAG" "$DOCKER_IMAGE:latest"
+                        docker push "$DOCKER_IMAGE:latest"
+                    '''
                 }
             }
         }
