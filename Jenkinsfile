@@ -36,6 +36,12 @@ pipeline {
         stage('Site') {
             steps {
                 sh 'mvn site site:stage'
+                sh '''
+                    mkdir -p target/staging/docs-core target/staging/docs-web-common target/staging/docs-web
+                    cp -R docs-core/target/site/. target/staging/docs-core/ 2>/dev/null || true
+                    cp -R docs-web-common/target/site/. target/staging/docs-web-common/ 2>/dev/null || true
+                    cp -R docs-web/target/site/. target/staging/docs-web/ 2>/dev/null || true
+                '''
           }
         }
         stage('Package') {
