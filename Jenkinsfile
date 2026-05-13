@@ -14,6 +14,12 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mvn test -Dmaven.test.failure.ignore=true'
+                sh 'find . -path "*/target/surefire-reports/TEST-*.xml" -print'
+            }
+            post {
+                always {
+                    junit testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true, skipPublishingChecks: true
+                }
             }
         }
         stage('PMD') {
@@ -43,7 +49,6 @@ pipeline {
             archiveArtifacts artifacts: '**/target/site/**', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
             archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
-            junit testResults: '**/target/surefire-reports/*.xml', skipPublishingChecks: true
         }
     }
 }
