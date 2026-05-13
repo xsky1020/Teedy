@@ -35,7 +35,7 @@ pipeline {
         
         stage('Site') {
             steps {
-                sh 'mvn site'
+                sh 'mvn site site:stage'
           }
         }
         stage('Package') {
@@ -47,6 +47,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: '**/target/site/**', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'target/staging/**', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
             archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
         }
